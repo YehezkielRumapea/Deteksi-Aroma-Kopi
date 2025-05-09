@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Nose Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>E-Nose Dashboard</h1>
+        <div class="button-group">
+            <button id="startMQ135Btn">Start MQ135</button>
+            <button id="startMQ2Btn">Start MQ2</button>
+            <button id="startMQ4Btn">Start MQ4</button>
+            <button id="startMQ7Btn">Start MQ7</button>
+            <button id="startAllBtn">Start All</button>
+            <button id="stopBtn">Stop</button>
+        </div>
+        <div class="chart-container">
+            <canvas id="sensorChart"></canvas>
+        </div>
+        <table id="sensorTable">
+            <thead>
+                <tr>
+                    <th data-column="timestamp">Timestamp</th>
+                    <th data-column="mq135">MQ135</th>
+                    <th data-column="mq2">MQ2</th>
+                    <th data-column="mq4">MQ4</th>
+                    <th data-column="mq7">MQ7</th>
+                    <th data-column="kualitas">Kualitas</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div id="apiLogs"></div>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>
