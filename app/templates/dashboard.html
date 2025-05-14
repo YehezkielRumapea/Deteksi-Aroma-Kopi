@@ -19,6 +19,14 @@
             <button id="stopBtn">Stop</button>
         </div>
         <div class="chart-container">
+            <label for="intervalSelect">Pilih Interval Grafik: </label>
+            <select id="intervalSelect">
+                <option value="3s">3 Detik</option>
+                <option value="30s">30 Detik</option>
+                <option value="1m">1 Menit</option>
+                <option value="5m">5 Menit</option>
+                <option value="10m">10 Menit</option>
+            </select>
             <canvas id="sensorChart"></canvas>
         </div>
         <table id="sensorTable">
@@ -34,7 +42,11 @@
             </thead>
             <tbody></tbody>
         </table>
-        <div id="apiLogs"></div>
+        <div id="apiLogs">
+            {% for log in api_logs %}
+                <div>{{ log.timestamp }} [{{ log.method }} {{ log.endpoint }}]: {{ log.response }} (Status: {{ log.status_code }})</div>
+            {% endfor %}
+        </div>
     </div>
     <script src="/static/script.js"></script>
 </body>

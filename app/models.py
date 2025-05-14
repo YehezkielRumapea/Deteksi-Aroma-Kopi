@@ -1,20 +1,18 @@
-
-from sqlalchemy import Column, Integer, Float, DateTime, String
-from sqlalchemy.sql import func  # Untuk server default timestamp
-from app.database import Base  # Impor Base dari database.py
-import datetime
+from sqlalchemy import Column, Integer, Float, String, DateTime, Boolean
+from sqlalchemy.sql import func
+from app.database import Base
 
 class SensorData(Base):
     __tablename__ = "sensor_data"
 
     id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, index=True)  # Ubah ke DateTime
     mq135 = Column(Float, nullable=True)
     mq2 = Column(Float, nullable=True)
     mq4 = Column(Float, nullable=True)
     mq7 = Column(Float, nullable=True)
-    timestamp = Column(DateTime, default=func.now(), server_default=func.now())
-    kualitas = Column(String, nullable=True)  # Label kualitas kopi
-
+    kualitas = Column(String)
+    exported = Column(Boolean, default=False)
 
 class ApiLogs(Base):
     __tablename__ = "api_logs"
@@ -22,6 +20,6 @@ class ApiLogs(Base):
     id = Column(Integer, primary_key=True, index=True)
     endpoint = Column(String, index=True)
     method = Column(String)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
     status_code = Column(Integer)
     response = Column(String)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
