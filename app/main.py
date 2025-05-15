@@ -62,7 +62,7 @@ def export_loop():
             logger.info(f"✅ {result['message']}")
         except Exception as e:
             logger.error(f"❌ Gagal ekspor data: {e}")
-        time.sleep(1800)
+        time.sleep(900)
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
