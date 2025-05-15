@@ -115,7 +115,7 @@ def export_sensor_data_to_csv(db: Session, output_dir: str):
             return {"message": "No new data to export"}
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
-        csv_file = os.path.join(output_dir, f"33.33%Arabika+66.67%Robusta.csv")
+        csv_file = os.path.join(output_dir, f"33.33%Robusta+66.67%Arabika.csv")
         
         with open(csv_file, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=["id", "timestamp", "mq135", "mq2", "mq4", "mq7", "kualitas"])
