@@ -110,7 +110,7 @@ def tentukan_jenis(data: dict) -> str:
     #     return "Robusta"
     
     # Override hasil agar selalu Arabika
-    return "Arabika"
+    return f"90%arabika+10%robusta"
 
 
 def export_sensor_data_to_csv(db: Session, output_dir: str):
@@ -120,7 +120,7 @@ def export_sensor_data_to_csv(db: Session, output_dir: str):
             return {"message": "No new data to export"}
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
-        csv_file = os.path.join(output_dir, f"arabika100.csv")
+        csv_file = os.path.join(output_dir, f"90%arabika+10%robusta.csv")
         
         with open(csv_file, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=["id", "timestamp", "mq135", "mq2", "mq4", "mq7", "jenis"])
