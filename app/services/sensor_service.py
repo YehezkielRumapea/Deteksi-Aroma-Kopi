@@ -21,7 +21,7 @@ def create_sensor_data(db: Session, sensor_data: SensorCreate):
             mq2=sensor_data.mq2,
             mq4=sensor_data.mq4,
             mq7=sensor_data.mq7,
-            kualitas=sensor_data.kualitas,
+            jenis=sensor_data.jenis,
             exported=False
         )
 
@@ -96,17 +96,22 @@ def create_log(db: Session, endpoint: str, method: str, status_code: int, respon
     db.refresh(log)
     return log
 
-def tentukan_kualitas(data: dict) -> str:
-    values = [float(data[key]) for key in ["mq135", "mq2", "mq4", "mq7"] if data.get(key) is not None]
-    if not values:
-        return "Tidak Terdeteksi"
-    avg_value = sum(values) / len(values)
-    if avg_value < 2.0:
-        return "Kopi Ringan"
-    elif avg_value < 3.5:
-        return "Kopi Sedang"
-    else:
-        return "Kopi Kuat"
+def tentukan_jenis(data: dict) -> str:
+    # values = [float(data[key]) for key in ["mq135", "mq2", "mq4", "mq7"] if data.get(key) is not None]
+    # if not values:
+    #     return "Tidak Terdeteksi"
+    
+    # avg_value = sum(values) / len(values)
+    # if avg_value < 1.0:
+    #     return "Arabika"
+    # elif avg_value < 2.5:
+    #     return "Campuran"
+    # else:
+    #     return "Robusta"
+    
+    # Override hasil agar selalu Arabika
+    return "Arabika"
+
 
 def export_sensor_data_to_csv(db: Session, output_dir: str):
     try:
@@ -115,10 +120,10 @@ def export_sensor_data_to_csv(db: Session, output_dir: str):
             return {"message": "No new data to export"}
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
-        csv_file = os.path.join(output_dir, f"33.33%Robusta+66.67%Arabika.csv")
+        csv_file = os.path.join(output_dir, f"arabika100.csv")
         
         with open(csv_file, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=["id", "timestamp", "mq135", "mq2", "mq4", "mq7", "kualitas"])
+            writer = csv.DictWriter(f, fieldnames=["id", "timestamp", "mq135", "mq2", "mq4", "mq7", "jenis"])
             writer.writeheader()
             for d in data:
                 writer.writerow({
@@ -128,7 +133,7 @@ def export_sensor_data_to_csv(db: Session, output_dir: str):
                     "mq2": d.mq2,
                     "mq4": d.mq4,
                     "mq7": d.mq7,
-                    "kualitas": d.kualitas
+                    "jenis": d.jenis
                 })
 
         db.query(SensorData).filter(SensorData.exported == False).update({"exported": True})
@@ -166,7 +171,7 @@ def get_db_data_for_interval(db: Session, interval: str):
                     "mq2": float(d.mq2) if d.mq2 is not None else None,
                     "mq4": float(d.mq4) if d.mq4 is not None else None,
                     "mq7": float(d.mq7) if d.mq7 is not None else None,
-                    "kualitas": d.kualitas
+                    "jenis": d.jenis
                 }
                 for d in data
             ]
@@ -186,7 +191,7 @@ def get_db_data_for_interval(db: Session, interval: str):
                 func.avg(SensorData.mq2).label('mq2'),
                 func.avg(SensorData.mq4).label('mq4'),
                 func.avg(SensorData.mq7).label('mq7'),
-                func.max(SensorData.kualitas).label('kualitas')
+                func.max(SensorData.jenis).label('jenis')
             ).filter(SensorData.timestamp >= time_threshold)\
              .group_by('time_bucket')\
              .order_by('time_bucket').all()
@@ -198,7 +203,7 @@ def get_db_data_for_interval(db: Session, interval: str):
                     "mq2": float(d.mq2) if d.mq2 is not None else None,
                     "mq4": float(d.mq4) if d.mq4 is not None else None,
                     "mq7": float(d.mq7) if d.mq7 is not None else None,
-                    "kualitas": d.kualitas
+                    "jenis": d.jenis
                 }
                 for d in data
             ]
@@ -213,7 +218,7 @@ def get_db_data_for_interval(db: Session, interval: str):
             func.avg(SensorData.mq2).label('mq2'),
             func.avg(SensorData.mq4).label('mq4'),
             func.avg(SensorData.mq7).label('mq7'),
-            func.max(SensorData.kualitas).label('kualitas')
+            func.max(SensorData.jenis).label('jenis')
         ).filter(SensorData.timestamp >= time_threshold)\
          .group_by('time_bucket')\
          .order_by('time_bucket').all()
@@ -225,7 +230,7 @@ def get_db_data_for_interval(db: Session, interval: str):
                 "mq2": float(d.mq2) if d.mq2 is not None else None,
                 "mq4": float(d.mq4) if d.mq4 is not None else None,
                 "mq7": float(d.mq7) if d.mq7 is not None else None,
-                "kualitas": d.kualitas
+                "jenis": d.jenis
             }
             for d in data
         ]

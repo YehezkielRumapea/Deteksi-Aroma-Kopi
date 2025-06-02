@@ -16,18 +16,23 @@
             <button id="startMQ4Btn">Start MQ4</button>
             <button id="startMQ7Btn">Start MQ7</button>
             <button id="startAllBtn">Start All</button>
+            <button id="startAIBtn">Start AI</button>
             <button id="stopBtn">Stop</button>
         </div>
         <div class="chart-container">
             <label for="intervalSelect">Pilih Interval Grafik: </label>
             <select id="intervalSelect">
                 <option value="3s">3 Detik</option>
+                <option value="10s">10 Detik</option>
                 <option value="30s">30 Detik</option>
                 <option value="1m">1 Menit</option>
                 <option value="5m">5 Menit</option>
-                <option value="10m">10 Menit</option>
             </select>
             <canvas id="sensorChart"></canvas>
+        </div>
+        <div class="ai-result">
+            <h2>Hasil Klasifikasi AI</h2>
+            <p id="aiResult">Menunggu...</p>
         </div>
         <table id="sensorTable">
             <thead>
@@ -37,7 +42,7 @@
                     <th data-column="mq2">MQ2</th>
                     <th data-column="mq4">MQ4</th>
                     <th data-column="mq7">MQ7</th>
-                    <th data-column="kualitas">Kualitas</th>
+                    <th data-column="ai_classification">AI Klasifikasi</th>
                 </tr>
             </thead>
             <tbody></tbody>

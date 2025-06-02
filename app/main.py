@@ -14,6 +14,7 @@ from app.schemas.sensor import SensorCreate
 from fastapi.responses import HTMLResponse
 import logging
 from app.config import sensor_status, sensor_threads
+from fastapi.middleware.cors import CORSMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -33,14 +34,14 @@ def sensor_loop(sensor_name: str):
         db = SessionLocal()
         try:
             sensor_data = baca_sensor(sensor_name if sensor_name != "all" else None)
-            sensor_data["kualitas"] = sensor_service.tentukan_kualitas(sensor_data)
+            sensor_data["jenis"] = sensor_service.tentukan_jenis(sensor_data)
             sensor_model = SensorCreate(**{
-                "timestamp": sensor_data["timestamp"],  # Gunakan timestamp dari baca_sensor
+                "timestamp": sensor_data["timestamp"],
                 "mq135": float(sensor_data["mq135"]) if sensor_data.get("mq135") else None,
                 "mq2": float(sensor_data["mq2"]) if sensor_data.get("mq2") else None,
                 "mq4": float(sensor_data["mq4"]) if sensor_data.get("mq4") else None,
                 "mq7": float(sensor_data["mq7"]) if sensor_data.get("mq7") else None,
-                "kualitas": sensor_data["kualitas"]
+                "jenis": sensor_data["jenis"]
             })
             sensor_service.create_sensor_data(db, sensor_model)
             logger.info(f"✅ Data {sensor_name} tersimpan: {sensor_data}")
@@ -48,7 +49,7 @@ def sensor_loop(sensor_name: str):
             logger.error(f"❌ Gagal menyimpan data {sensor_name}: {e}")
         finally:
             db.close()
-        time.sleep(3)
+        time.sleep(1)
 
 def export_loop():
     db = SessionLocal()
@@ -62,7 +63,8 @@ def export_loop():
             logger.info(f"✅ {result['message']}")
         except Exception as e:
             logger.error(f"❌ Gagal ekspor data: {e}")
-        time.sleep(900)
+        time.sleep(600)
+    db.close()
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
@@ -73,64 +75,88 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     })
 
 @app.post("/sensor/start/{sensor}")
-def start_sensor_endpoint(sensor: str, db: Session = Depends(get_db)):
+async def start_sensor_endpoint(sensor: str, db: Session = Depends(get_db)):
     global export_thread
     if sensor not in sensor_status:
         return {"error": f"Sensor {sensor} tidak valid"}
-    
-    # Hentikan semua sensor lain jika "all" dipilih
+
+    # Jika "all" dimulai, hentikan semua sensor individu
     if sensor == "all":
         for s in ["mq135", "mq2", "mq4", "mq7"]:
-            sensor_status[s].clear()
-            if sensor_threads[s]:
-                sensor_threads[s].join(timeout=5.0)
-                sensor_threads[s] = None
+            if sensor_status[s].is_set():
+                stop_sensor(s)
+                sensor_status[s].clear()
+                if sensor_threads[s]:
+                    sensor_threads[s].join(timeout=5.0)
+                    sensor_threads[s] = None
     else:
-        # Hentikan mode "all" jika sensor individu dipilih
-        sensor_status["all"].clear()
-        if sensor_threads["all"]:
-            sensor_threads["all"].join(timeout=5.0)
-            sensor_threads["all"] = None
-    
+        # Jika sensor individu dimulai, hentikan "all"
+        if sensor_status["all"].is_set():
+            stop_sensor("all")
+            sensor_status["all"].clear()
+            if sensor_threads["all"]:
+                sensor_threads["all"].join(timeout=5.0)
+                sensor_threads["all"] = None
+
     if sensor_status[sensor].is_set():
         return {"message": f"Sensor {sensor.upper()} sudah berjalan!"}
-    
-    start_sensor(sensor)
-    sensor_status[sensor].set()
-    sensor_threads[sensor] = threading.Thread(target=sensor_loop, args=(sensor,), daemon=True)
-    sensor_threads[sensor].start()
-    
-    # Mulai ekspor jika belum berjalan
+
+    try:
+        start_sensor(sensor)
+        sensor_status[sensor].set()
+        sensor_threads[sensor] = threading.Thread(target=sensor_loop, args=(sensor,), daemon=True)
+        sensor_threads[sensor].start()
+    except Exception as e:
+        logger.error(f"❌ Gagal memulai sensor {sensor}: {e}")
+        return {"error": f"Gagal memulai sensor: {e}"}
+
     if not export_thread or not export_thread.is_alive():
         export_thread = threading.Thread(target=export_loop, daemon=True)
         export_thread.start()
-    
+
     logger.info(f"Sensor {sensor.upper()} dimulai")
     return {"message": f"Sensor {sensor.upper()} mulai mengambil data!"}
 
 @app.post("/sensor/stop/{sensor}")
-def stop_sensor_endpoint(sensor: str, db: Session = Depends(get_db)):
+async def stop_sensor_endpoint(sensor: str, db: Session = Depends(get_db)):
     if sensor not in sensor_status:
         return {"error": f"Sensor {sensor} tidak valid"}
-    
-    stop_sensor(sensor)
-    sensor_status[sensor].clear()
-    if sensor_threads[sensor]:
-        sensor_threads[sensor].join(timeout=5.0)
-        sensor_threads[sensor] = None
-    logger.info(f"Sensor {sensor.upper()} dihentikan")
-    return {"message": f"Sensor {sensor.upper()} berhenti mengambil data!"}
 
-@app.post("/sensor/stop")
-def stop_all_sensors_endpoint(db: Session = Depends(get_db)):
-    stop_all_sensors()
-    for sensor in sensor_status:
+    try:
+        stop_sensor(sensor)
         sensor_status[sensor].clear()
         if sensor_threads[sensor]:
             sensor_threads[sensor].join(timeout=5.0)
             sensor_threads[sensor] = None
-    logger.info("Semua sensor dihentikan")
-    return {"message": "Semua sensor berhenti mengambil data!"}
+        logger.info(f"Sensor {sensor.upper()} dihentikan")
+        return {"message": f"Sensor {sensor.upper()} berhenti mengambil data!"}
+    except Exception as e:
+        logger.error(f"❌ Gagal menghentikan sensor {sensor}: {e}")
+        return {"error": f"Gagal menghentikan sensor: {e}"}
+
+@app.post("/sensor/stop")
+async def stop_all_sensors_endpoint(db: Session = Depends(get_db)):
+    try:
+        stop_all_sensors()
+        for sensor in sensor_status:
+            sensor_status[sensor].clear()
+            if sensor_threads[sensor]:
+                sensor_threads[sensor].join(timeout=5.0)
+                sensor_threads[sensor] = None
+        logger.info("Semua sensor dihentikan")
+        return {"message": "Semua sensor berhenti mengambil data!"}
+    except Exception as e:
+        logger.error(f"❌ Gagal menghentikan semua sensor: {e}")
+        return {"error": f"Gagal menghentikan semua sensor: {e}"}
+
+# Konfigurasi CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://192.168.129.105", "http://192.168.129.215", "ws://192.168.129.215:8000", "*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 if __name__ == "__main__":
     import uvicorn

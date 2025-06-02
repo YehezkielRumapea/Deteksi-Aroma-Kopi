@@ -9,7 +9,7 @@
 #     mq2: float
 #     mq4: float
 #     mq7: float
-#     kualitas: Optional[str] = None
+#     jenis: Optional[str] = None
 # class SensorCreate(SensorBase):
 #     """Skema untuk menerima data dari sensor_reader.py"""
 #     pass
@@ -30,7 +30,7 @@ class SensorCreate(BaseModel):
     mq2: Optional[float] = None
     mq4: Optional[float] = None
     mq7: Optional[float] = None
-    kualitas: Optional[str] = None
+    jenis: Optional[str] = None
 
 class SensorResponse(BaseModel):
     id: int
@@ -39,7 +39,7 @@ class SensorResponse(BaseModel):
     mq2: Optional[float]
     mq4: Optional[float]
     mq7: Optional[float]
-    kualitas: Optional[str]
+    jenis: Optional[str]
 
     class Config:
         from_attributes = True  # Untuk Pydantic v2, gantikan orm_mode
